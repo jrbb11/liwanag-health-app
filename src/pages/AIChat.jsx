@@ -191,22 +191,22 @@ export default function AIChat() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 via-white to-blue-100 py-8 px-2">
-      <div className="w-full max-w-2xl mx-auto rounded-[2.5rem] shadow-2xl bg-white/90 backdrop-blur-lg border border-blue-100 p-0 flex flex-col relative h-[80vh] min-h-[600px]">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 via-white to-blue-100 py-2 px-1 sm:py-8 sm:px-2">
+      <div className="w-full max-w-2xl mx-auto rounded-none sm:rounded-[2.5rem] shadow-2xl bg-white/90 backdrop-blur-lg border border-blue-100 p-0 flex flex-col relative h-[100dvh] min-h-[0] sm:h-[80vh] sm:min-h-[600px]">
         {/* Welcome/Intro Section */}
         {messages.length === 0 && !loading && (
-          <div className="flex flex-col items-center justify-center py-20 h-full">
-            <Bot className="w-14 h-14 text-blue-300 mb-4 drop-shadow-md" />
-            <h2 className="text-3xl font-extrabold mb-2 text-gray-800 tracking-tight text-center">Welcome to Liwanag Health AI Chat</h2>
-            <p className="text-gray-500 mb-8 text-center max-w-md text-lg font-medium">
+          <div className="flex flex-col items-center justify-center py-8 sm:py-20 h-full">
+            <Bot className="w-10 h-10 sm:w-14 sm:h-14 text-blue-300 mb-2 sm:mb-4 drop-shadow-md" />
+            <h2 className="text-xl sm:text-3xl font-extrabold mb-1 sm:mb-2 text-gray-800 tracking-tight text-center">Welcome to Liwanag Health AI Chat</h2>
+            <p className="text-gray-500 mb-4 sm:mb-8 text-center max-w-md text-base sm:text-lg font-medium">
               Ask about healthcare costs, procedures, or hospitals in English or Tagalog. Try a suggestion below!
             </p>
-            <div className="flex flex-wrap gap-3 mb-8 justify-center">
+            <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-8 justify-center">
               {SUGGESTIONS.map((s, i) => (
                 <button
                   key={i}
                   onClick={() => handleSuggestionClick(s)}
-                  className="bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-full px-5 py-2 text-base font-semibold shadow transition-all duration-150 border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  className="bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-full px-3 py-1 sm:px-5 sm:py-2 text-xs sm:text-base font-semibold shadow transition-all duration-150 border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
                   style={{ boxShadow: '0 2px 8px 0 rgba(80, 140, 255, 0.08)' }}
                 >
                   {s}
@@ -217,26 +217,26 @@ export default function AIChat() {
         )}
 
         {/* Chat Messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6" style={{ minHeight: 0 }}>
+        <div className="flex-1 overflow-y-auto px-2 py-3 sm:px-4 sm:py-6 space-y-4 sm:space-y-6" style={{ minHeight: 0 }}>
           {messages.map((message, index) => (
             <div
               key={index}
               className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`relative max-w-[80%] px-5 py-4 rounded-2xl shadow-lg text-base whitespace-pre-wrap
+                className={`relative max-w-[90%] sm:max-w-[80%] px-3 py-2 sm:px-5 sm:py-4 rounded-2xl shadow-lg text-sm sm:text-base whitespace-pre-wrap
                   ${message.role === 'user'
                     ? 'bg-gradient-to-br from-blue-500 to-blue-400 text-white rounded-br-md'
                     : 'bg-white/80 text-gray-900 border border-blue-100 rounded-bl-md'}
                 `}
               >
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-1 sm:gap-2 mb-0.5 sm:mb-1">
                   {message.role === 'assistant' ? (
-                    <Bot className="h-5 w-5 text-blue-400" />
+                    <Bot className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400" />
                   ) : (
-                    <User className="h-5 w-5 text-blue-100" />
+                    <User className="h-4 w-4 sm:h-5 sm:w-5 text-blue-100" />
                   )}
-                  <span className="text-xs font-semibold">
+                  <span className="text-[10px] sm:text-xs font-semibold">
                     {message.role === 'assistant' ? 'AI Assistant' : 'You'}
                   </span>
                 </div>
@@ -247,9 +247,9 @@ export default function AIChat() {
           {/* Typing indicator */}
           {loading && (
             <div className="flex justify-start">
-              <div className="flex items-center gap-2 bg-white/80 border border-blue-100 rounded-2xl px-5 py-3 shadow animate-pulse">
-                <Bot className="h-5 w-5 text-blue-400" />
-                <span className="text-sm text-gray-500">Analyzing data, please wait...</span>
+              <div className="flex items-center gap-1 sm:gap-2 bg-white/80 border border-blue-100 rounded-2xl px-3 py-2 sm:px-5 sm:py-3 shadow animate-pulse">
+                <Bot className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400" />
+                <span className="text-xs sm:text-sm text-gray-500">Analyzing data, please wait...</span>
               </div>
             </div>
           )}
@@ -259,28 +259,28 @@ export default function AIChat() {
         {/* Floating Input Bar */}
         <form
           onSubmit={handleSubmit}
-          className="sticky bottom-0 left-0 w-full bg-white/95 backdrop-blur-lg border-t border-blue-100 flex items-center gap-3 px-6 py-4 rounded-b-[2.5rem] shadow-lg z-10"
+          className="sticky bottom-0 left-0 w-full bg-white/95 backdrop-blur-lg border-t border-blue-100 flex items-center gap-1 sm:gap-3 px-2 py-2 sm:px-6 sm:py-4 rounded-b-none sm:rounded-b-[2.5rem] shadow-lg z-10"
         >
           <button
             type="button"
             onClick={handleMicClick}
-            className={`p-3 rounded-full ${listening ? 'bg-blue-100 text-blue-600' : 'bg-white text-blue-400 hover:bg-blue-50'} shadow transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-300`}
+            className={`p-2 sm:p-3 rounded-full ${listening ? 'bg-blue-100 text-blue-600' : 'bg-white text-blue-400 hover:bg-blue-50'} shadow transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-300`}
             aria-label="Voice input"
             disabled={loading}
           >
-            <Mic className="w-6 h-6" />
+            <Mic className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
           <button
             type="button"
-            className="p-3 rounded-full bg-white text-blue-300 hover:bg-blue-50 shadow transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-300"
+            className="p-2 sm:p-3 rounded-full bg-white text-blue-300 hover:bg-blue-50 shadow transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-300"
             aria-label="Attach file (coming soon)"
             disabled
           >
-            <Paperclip className="w-6 h-6" />
+            <Paperclip className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
           <input
             type="text"
-            className="flex-1 border-none bg-transparent focus:ring-0 px-4 py-3 text-lg placeholder-blue-200 outline-none rounded-full"
+            className="flex-1 border-none bg-transparent focus:ring-0 px-2 py-2 sm:px-4 sm:py-3 text-sm sm:text-lg placeholder-blue-200 outline-none rounded-full"
             placeholder="Ask, write or search for anything..."
             value={input}
             onChange={e => setInput(e.target.value)}
@@ -288,14 +288,14 @@ export default function AIChat() {
           />
           <button
             type="submit"
-            className="bg-gradient-to-br from-blue-400 to-blue-500 hover:from-blue-500 hover:to-blue-600 text-white px-6 py-3 rounded-full font-bold shadow transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-50"
+            className="bg-gradient-to-br from-blue-400 to-blue-500 hover:from-blue-500 hover:to-blue-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-full font-bold shadow transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-50 text-sm sm:text-base"
             disabled={loading || !input.trim()}
           >
-            <Send className="w-6 h-6" />
+            <Send className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
         </form>
         {error && (
-          <div className="p-2 text-red-600 text-sm text-center">{error}</div>
+          <div className="p-2 text-red-600 text-xs sm:text-sm text-center">{error}</div>
         )}
       </div>
     </div>
