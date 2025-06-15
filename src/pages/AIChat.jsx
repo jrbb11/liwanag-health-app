@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import supabase from '../lib/supabaseClient';
-import { getGPTResponse, formatMessageForGPT } from '../services/gpt';
-import { hospitals } from '../data/hospitals';
-import { procedures } from '../data/procedures';
+// import { getGPTResponse, formatMessageForGPT } from '../services/gpt';
+// import { hospitals } from '../data/hospitals';
+// import { procedures } from '../data/procedures';
 import { Send, Loader2, Bot, User, Mic, Paperclip, Smile, X, Settings } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -56,20 +56,7 @@ export default function AIChat({ onClose, onLogin, onRegister }) {
   });
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const hospitalId = params.get('hospitalId');
-    const procedureId = params.get('procedureId');
-
-    if (hospitalId) {
-      const hospital = hospitals.find(h => h.id === parseInt(hospitalId));
-      if (hospital) setSelectedHospital(hospital);
-    }
-
-    if (procedureId) {
-      const procedure = procedures.find(p => p.id === parseInt(procedureId));
-      if (procedure) setSelectedProcedure(procedure);
-    }
-
+    // Removed hospital/procedure param logic since data is gone
     loadChatHistory();
   }, [location]);
 
@@ -152,8 +139,7 @@ export default function AIChat({ onClose, onLogin, onRegister }) {
       await supabase.from('chat_messages').insert([
         { role: 'user', content: userMessage, session_id: sessionId },
       ]);
-      const formattedMessage = formatMessageForGPT(userMessage, {});
-      const gptResponse = await getGPTResponse(formattedMessage);
+      const gptResponse = 'AI response simulation: This is a placeholder response.';
       const assistantMessageObj = {
         role: 'assistant',
         content: gptResponse,
