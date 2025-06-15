@@ -27,23 +27,9 @@ export default function ChatFloatingButton() {
       {/* Modal */}
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-white/10 backdrop-blur-[8px]"
-          onClick={handleBackgroundClick}
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-[95vw] max-w-md h-[80vh] sm:w-[400px] sm:h-[600px] flex flex-col shadow-2xl"
         >
-          <div className="bg-white/90 rounded-[2.5rem] shadow-2xl border border-blue-100 max-w-2xl w-full relative p-0">
-            {/* Close button */}
-            <button
-              onClick={() => setOpen(false)}
-              className="absolute top-2 right-4 text-gray-400 hover:text-gray-700 text-3xl font-bold focus:outline-none z-10"
-              aria-label="Close AI Chat"
-              style={{ background: 'none' }}
-            >
-              ×
-            </button>
-            <div className="p-0">
-              <AIChat />
-            </div>
-          </div>
+          <AIChat onClose={() => setOpen(false)} />
         </div>
       )}
     </>
