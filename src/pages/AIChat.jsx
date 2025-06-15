@@ -4,7 +4,7 @@ import supabase from '../lib/supabaseClient';
 import { getGPTResponse, formatMessageForGPT } from '../services/gpt';
 import { hospitals } from '../data/hospitals';
 import { procedures } from '../data/procedures';
-import { Send, Loader2, Bot, User, Mic, Paperclip } from 'lucide-react';
+import { Send, Loader2, Bot, User, Mic, Paperclip, Smile, X, Settings } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 const SYSTEM_PROMPT = `You are a healthcare cost estimation assistant. You have access to information about hospitals and medical procedures in the Philippines. 
@@ -35,7 +35,10 @@ if (!sessionId) {
   localStorage.setItem(SESSION_KEY, sessionId);
 }
 
-export default function AIChat() {
+const MESSAGE_LIMIT = 5;
+const MESSAGE_COUNT_KEY = 'liwanag_user_message_count';
+
+export default function AIChat({ onClose, onLogin, onRegister }) {
   const location = useLocation();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -45,7 +48,12 @@ export default function AIChat() {
   const [selectedHospital, setSelectedHospital] = useState(null);
   const [selectedProcedure, setSelectedProcedure] = useState(null);
   const [listening, setListening] = useState(false);
+  const [showEmoji, setShowEmoji] = useState(false);
   const recognitionRef = useRef(null);
+  const [userMessageCount, setUserMessageCount] = useState(() => {
+    const stored = localStorage.getItem(MESSAGE_COUNT_KEY);
+    return stored ? parseInt(stored, 10) : 0;
+  });
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -124,66 +132,38 @@ export default function AIChat() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!input.trim() || loading) return;
-
+    if (!input.trim() || loading || userMessageCount >= MESSAGE_LIMIT) return;
     const userMessage = input.trim();
     setInput('');
     setLoading(true);
     setError(null);
-
     try {
-      // Add user message to UI immediately
       const userMessageObj = {
         role: 'user',
         content: userMessage,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
-      setMessages(prev => [...prev, userMessageObj]);
-
-      // Save user message to Supabase
-      const { error: saveError } = await supabase
-        .from('chat_messages')
-        .insert([{
-          role: 'user',
-          content: userMessage,
-          hospital_id: selectedHospital?.id,
-          procedure_id: selectedProcedure?.id,
-          session_id: sessionId
-        }]);
-
-      if (saveError) throw saveError;
-
-      // Get GPT response
-      const formattedMessage = formatMessageForGPT(userMessage, {
-        hospital: selectedHospital,
-        procedure: selectedProcedure
+      setMessages((prev) => [...prev, userMessageObj]);
+      setUserMessageCount((count) => {
+        const newCount = count + 1;
+        localStorage.setItem(MESSAGE_COUNT_KEY, newCount);
+        return newCount;
       });
-      // Pass the Tagalog-ready system prompt
-      const gptResponse = await getGPTResponse(formattedMessage, { systemPrompt: SYSTEM_PROMPT });
-
-      // Add assistant message to UI
+      await supabase.from('chat_messages').insert([
+        { role: 'user', content: userMessage, session_id: sessionId },
+      ]);
+      const formattedMessage = formatMessageForGPT(userMessage, {});
+      const gptResponse = await getGPTResponse(formattedMessage);
       const assistantMessageObj = {
         role: 'assistant',
         content: gptResponse,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
-      setMessages(prev => [...prev, assistantMessageObj]);
-
-      // Save assistant message to Supabase
-      const { error: saveAssistantError } = await supabase
-        .from('chat_messages')
-        .insert([{
-          role: 'assistant',
-          content: gptResponse,
-          hospital_id: selectedHospital?.id,
-          procedure_id: selectedProcedure?.id,
-          session_id: sessionId
-        }]);
-
-      if (saveAssistantError) throw saveAssistantError;
-
+      setMessages((prev) => [...prev, assistantMessageObj]);
+      await supabase.from('chat_messages').insert([
+        { role: 'assistant', content: gptResponse, session_id: sessionId },
+      ]);
     } catch (error) {
-      console.error('Error in chat:', error);
       setError('Failed to send message. Please try again.');
     } finally {
       setLoading(false);
@@ -191,23 +171,42 @@ export default function AIChat() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 via-white to-blue-100 py-2 px-1 sm:py-8 sm:px-2">
-      <div className="w-full max-w-2xl mx-auto rounded-none sm:rounded-[2.5rem] shadow-2xl bg-white/90 backdrop-blur-lg border border-blue-100 p-0 flex flex-col relative h-[100dvh] min-h-[0] sm:h-[80vh] sm:min-h-[600px]">
-        {/* Welcome/Intro Section */}
+    <div className="flex flex-col h-full w-full max-w-md mx-auto bg-white rounded-2xl shadow-2xl border border-blue-100 overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 bg-emerald-600 text-white">
+        <div className="flex items-center gap-3">
+          <div className="bg-white rounded-full p-1 w-10 h-10 flex items-center justify-center">
+            <Bot className="w-7 h-7 text-emerald-600" />
+          </div>
+          <div>
+            <div className="font-bold text-base leading-tight">Chat with Liwanag Health AI</div>
+            <div className="text-xs text-emerald-100 flex items-center gap-1">
+              <span className="inline-block w-2 h-2 bg-green-400 rounded-full"></span> We're online
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button className="p-2 hover:bg-emerald-700/30 rounded-full" aria-label="Settings">
+            <Settings className="w-5 h-5" />
+          </button>
+          <button className="p-2 hover:bg-emerald-700/30 rounded-full" aria-label="Close" onClick={onClose}>
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+      </div>
+      {/* Chat Area */}
+      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-3 bg-blue-50" style={{ minHeight: 0 }}>
         {messages.length === 0 && !loading && (
-          <div className="flex flex-col items-center justify-center py-8 sm:py-20 h-full">
-            <Bot className="w-10 h-10 sm:w-14 sm:h-14 text-blue-300 mb-2 sm:mb-4 drop-shadow-md" />
-            <h2 className="text-xl sm:text-3xl font-extrabold mb-1 sm:mb-2 text-gray-800 tracking-tight text-center">Welcome to Liwanag Health AI Chat</h2>
-            <p className="text-gray-500 mb-4 sm:mb-8 text-center max-w-md text-base sm:text-lg font-medium">
-              Ask about healthcare costs, procedures, or hospitals in English or Tagalog. Try a suggestion below!
-            </p>
-            <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-8 justify-center">
+          <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 py-10">
+            <Bot className="w-12 h-12 text-emerald-400 mb-3" />
+            <div className="font-bold text-lg mb-1">Welcome to Liwanag Health AI Chat</div>
+            <div className="mb-4 text-sm">Ask about healthcare costs, procedures, or hospitals in English or Tagalog.</div>
+            <div className="flex flex-wrap gap-2 justify-center">
               {SUGGESTIONS.map((s, i) => (
                 <button
                   key={i}
                   onClick={() => handleSuggestionClick(s)}
-                  className="bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-full px-3 py-1 sm:px-5 sm:py-2 text-xs sm:text-base font-semibold shadow transition-all duration-150 border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
-                  style={{ boxShadow: '0 2px 8px 0 rgba(80, 140, 255, 0.08)' }}
+                  className="bg-white hover:bg-emerald-100 text-emerald-600 rounded-full px-3 py-1 text-xs font-semibold border border-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-300 shadow"
                 >
                   {s}
                 </button>
@@ -215,89 +214,115 @@ export default function AIChat() {
             </div>
           </div>
         )}
-
-        {/* Chat Messages */}
-        <div className="flex-1 overflow-y-auto px-2 py-3 sm:px-4 sm:py-6 space-y-4 sm:space-y-6" style={{ minHeight: 0 }}>
-          {messages.map((message, index) => (
+        {messages.map((message, index) => (
+          <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div
-              key={index}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`max-w-[80%] px-4 py-2 rounded-2xl shadow text-sm whitespace-pre-wrap
+                ${message.role === 'user'
+                  ? 'bg-gradient-to-br from-emerald-600 to-emerald-500 text-white rounded-br-md'
+                  : 'bg-white text-gray-900 border border-emerald-100 rounded-bl-md'}
+              `}
             >
-              <div
-                className={`relative max-w-[90%] sm:max-w-[80%] px-3 py-2 sm:px-5 sm:py-4 rounded-2xl shadow-lg text-sm sm:text-base whitespace-pre-wrap
-                  ${message.role === 'user'
-                    ? 'bg-gradient-to-br from-blue-500 to-blue-400 text-white rounded-br-md'
-                    : 'bg-white/80 text-gray-900 border border-blue-100 rounded-bl-md'}
-                `}
-              >
-                <div className="flex items-center gap-1 sm:gap-2 mb-0.5 sm:mb-1">
-                  {message.role === 'assistant' ? (
-                    <Bot className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400" />
-                  ) : (
-                    <User className="h-4 w-4 sm:h-5 sm:w-5 text-blue-100" />
-                  )}
-                  <span className="text-[10px] sm:text-xs font-semibold">
-                    {message.role === 'assistant' ? 'AI Assistant' : 'You'}
-                  </span>
+              <div className="flex items-center gap-2 mb-1">
+                {message.role === 'assistant' ? (
+                  <Bot className="h-4 w-4 text-emerald-500" />
+                ) : (
+                  <User className="h-4 w-4 text-emerald-200" />
+                )}
+                <span className="text-xs font-semibold">
+                  {message.role === 'assistant' ? 'AI Assistant' : 'You'}
+                </span>
+              </div>
+              <p>{message.content}</p>
+              {/* Quick replies for bot messages (example) */}
+              {message.role === 'assistant' && index === messages.length - 1 && SUGGESTIONS.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {SUGGESTIONS.map((s, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handleSuggestionClick(s)}
+                      className="bg-emerald-100 hover:bg-emerald-200 text-emerald-600 rounded-full px-3 py-1 text-xs font-semibold border border-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-300 shadow"
+                    >
+                      {s}
+                    </button>
+                  ))}
                 </div>
-                <p>{message.content}</p>
-              </div>
+              )}
             </div>
-          ))}
-          {/* Typing indicator */}
-          {loading && (
-            <div className="flex justify-start">
-              <div className="flex items-center gap-1 sm:gap-2 bg-white/80 border border-blue-100 rounded-2xl px-3 py-2 sm:px-5 sm:py-3 shadow animate-pulse">
-                <Bot className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400" />
-                <span className="text-xs sm:text-sm text-gray-500">Analyzing data, please wait...</span>
-              </div>
+          </div>
+        ))}
+        {loading && (
+          <div className="flex justify-start">
+            <div className="flex items-center gap-2 bg-white border border-emerald-100 rounded-2xl px-4 py-2 shadow animate-pulse">
+              <Bot className="h-4 w-4 text-emerald-500" />
+              <span className="text-xs text-gray-500">Analyzing data, please wait...</span>
             </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Floating Input Bar */}
-        <form
-          onSubmit={handleSubmit}
-          className="sticky bottom-0 left-0 w-full bg-white/95 backdrop-blur-lg border-t border-blue-100 flex items-center gap-1 sm:gap-3 px-2 py-2 sm:px-6 sm:py-4 rounded-b-none sm:rounded-b-[2.5rem] shadow-lg z-10"
-        >
-          <button
-            type="button"
-            onClick={handleMicClick}
-            className={`p-2 sm:p-3 rounded-full ${listening ? 'bg-blue-100 text-blue-600' : 'bg-white text-blue-400 hover:bg-blue-50'} shadow transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-300`}
-            aria-label="Voice input"
-            disabled={loading}
-          >
-            <Mic className="w-5 h-5 sm:w-6 sm:h-6" />
-          </button>
-          <button
-            type="button"
-            className="p-2 sm:p-3 rounded-full bg-white text-blue-300 hover:bg-blue-50 shadow transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-300"
-            aria-label="Attach file (coming soon)"
-            disabled
-          >
-            <Paperclip className="w-5 h-5 sm:w-6 sm:h-6" />
-          </button>
-          <input
-            type="text"
-            className="flex-1 border-none bg-transparent focus:ring-0 px-2 py-2 sm:px-4 sm:py-3 text-sm sm:text-lg placeholder-blue-200 outline-none rounded-full"
-            placeholder="Ask, write or search for anything..."
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            disabled={loading}
-          />
-          <button
-            type="submit"
-            className="bg-gradient-to-br from-blue-400 to-blue-500 hover:from-blue-500 hover:to-blue-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-full font-bold shadow transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-50 text-sm sm:text-base"
-            disabled={loading || !input.trim()}
-          >
-            <Send className="w-5 h-5 sm:w-6 sm:h-6" />
-          </button>
-        </form>
-        {error && (
-          <div className="p-2 text-red-600 text-xs sm:text-sm text-center">{error}</div>
+          </div>
         )}
+        <div ref={messagesEndRef} />
       </div>
+      {/* Input Bar */}
+      <form
+        onSubmit={handleSubmit}
+        className="flex items-center gap-2 px-3 py-2 bg-white border-t border-blue-100"
+      >
+        <button
+          type="button"
+          className="p-2 rounded-full hover:bg-emerald-50 text-emerald-500"
+          aria-label="Emoji picker"
+          onClick={() => setShowEmoji(!showEmoji)}
+          disabled={userMessageCount >= MESSAGE_LIMIT}
+        >
+          <Smile className="w-5 h-5" />
+        </button>
+        <button
+          type="button"
+          className="p-2 rounded-full hover:bg-emerald-50 text-emerald-500"
+          aria-label="Attach file (coming soon)"
+          disabled
+        >
+          <Paperclip className="w-5 h-5" />
+        </button>
+        <input
+          type="text"
+          className="flex-1 border-none bg-transparent focus:ring-0 px-2 py-2 text-sm placeholder-blue-200 outline-none rounded-full"
+          placeholder="Enter your message..."
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          disabled={loading || userMessageCount >= MESSAGE_LIMIT}
+        />
+        <button
+          type="submit"
+          className="bg-gradient-to-br from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white px-4 py-2 rounded-full font-bold shadow transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-300 disabled:opacity-50 text-sm"
+          disabled={loading || !input.trim() || userMessageCount >= MESSAGE_LIMIT}
+        >
+          <Send className="w-5 h-5" />
+        </button>
+      </form>
+      {userMessageCount >= MESSAGE_LIMIT && (
+        <div className="flex flex-col items-center gap-2 py-3">
+          <div className="text-emerald-700 text-xs text-center font-semibold mb-1">
+            Please log in to continue chatting with the AI.
+          </div>
+          <div className="flex gap-2">
+            <button
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1 rounded font-semibold text-xs shadow focus:outline-none focus:ring-2 focus:ring-emerald-300"
+              onClick={onLogin || (() => { window.location.href = '/login'; })}
+            >
+              Log in
+            </button>
+            <button
+              className="bg-white border border-emerald-600 text-emerald-700 hover:bg-emerald-50 px-4 py-1 rounded font-semibold text-xs shadow focus:outline-none focus:ring-2 focus:ring-emerald-300"
+              onClick={onRegister || (() => { window.location.href = '/register'; })}
+            >
+              Register
+            </button>
+          </div>
+        </div>
+      )}
+      {error && (
+        <div className="p-2 text-red-600 text-xs text-center">{error}</div>
+      )}
     </div>
   );
 } 
